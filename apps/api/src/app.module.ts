@@ -5,8 +5,9 @@ import { AppService } from '@/app.service';
 import { PrismaModule } from '@/prisma/prisma.module';
 import { env } from '@/config';
 import { AuthModule } from '@/modules/auth/auth.module';
-import { JwtAuthGuard } from '@/common/guards';
+import { JwtAuthGuard, RoleGuard } from '@/common/guards';
 import { EmailsModule } from '@/queues/emails/emails.module';
+import { DepartmentsModule } from '@/modules/departments/departments.module';
 
 @Module({
   imports: [
@@ -18,9 +19,10 @@ import { EmailsModule } from '@/queues/emails/emails.module';
     }),
     AuthModule,
     EmailsModule,
+    DepartmentsModule,
   ],
   controllers: [AppController],
-  providers: [AppService, JwtAuthGuard],
-  exports: [JwtAuthGuard],
+  providers: [AppService, JwtAuthGuard, RoleGuard],
+  exports: [JwtAuthGuard, RoleGuard],
 })
 export class AppModule {}
