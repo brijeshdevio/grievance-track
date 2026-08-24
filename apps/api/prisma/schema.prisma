@@ -1,0 +1,217 @@
+// ============================================================
+// GrievanceTrack — Prisma Schema
+// DB      : PostgreSQL
+// ============================================================
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================================
+// ENUMS
+// ============================================================
+
+enum Role {
+  CITIZEN
+  DEPARTMENT
+  ADMIN
+}
+
+enum ComplaintStatus {
+  SUBMITTED
+  UNDER_REVIEW
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String
+  email         String   @unique
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  role     Role    @default(CITIZEN)
+  isActive Boolean @default(true)
+  passwordHash String
+
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+
+  sessions Session[]
+
+  complaints             Complaint[]              @relation("CitizenComplaints")
+  complaintStatusHistory ComplaintStatusHistory[]
+  complaintComments      ComplaintComment[]
+  notifications          Notification[]
+
+  @@index([departmentId])
+  @@map("user")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Refresh token stored as a hash, never plaintext
+  tokenHash    String   @unique
+
+  // Device / client info
+  deviceName   String?
+  deviceType   String?  // "mobile" | "desktop" | "tablet"
+  browser      String?
+  os           String?
+  ipAddress    String?
+  userAgent    String?
+
+  // Lifecycle
+  expiresAt    DateTime
+  lastActiveAt DateTime @default(now())
+  isRevoked    Boolean  @default(false)
+  revokedAt    DateTime?
+
+  @@index([userId])
+  @@index([tokenHash])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+
+
+
+// ============================================================
+// APP TABLES
+// ============================================================
+
+model Department {
+  id          String   @id @default(cuid())
+  name        String // "PWD Delhi"
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users      User[] 
+  categories Category[]
+  complaints Complaint[]
+
+  @@map("department")
+}
+
+model Category {
+  id        String   @id @default(cuid())
+  name      String 
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  departmentId String
+  department   Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+
+  complaints Complaint[]
+
+  @@index([departmentId])
+  @@map("category")
+}
+
+model Complaint {
+  id String @id @default(cuid())
+
+  complaintNumber String @unique
+
+  title       String
+  description String
+  location    String
+  photoUrl    String?
+  status      ComplaintStatus @default(SUBMITTED)
+
+  rating        Int? 
+  ratingComment String?
+  closedAt      DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  citizenId String
+  citizen   User   @relation("CitizenComplaints", fields: [citizenId], references: [id], onDelete: Cascade)
+
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  departmentId String
+  department   Department @relation(fields: [departmentId], references: [id])
+
+  statusHistory ComplaintStatusHistory[]
+  comments      ComplaintComment[]
+  notifications Notification[]
+
+  @@index([citizenId])
+  @@index([departmentId])
+  @@index([categoryId])
+  @@index([status])
+  @@map("complaint")
+}
+
+model ComplaintStatusHistory {
+  id     String          @id @default(cuid())
+  status ComplaintStatus
+  note   String? 
+
+  createdAt DateTime @default(now())
+
+  complaintId String
+  complaint   Complaint @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+
+  changedById String
+  changedBy   User   @relation(fields: [changedById], references: [id], onDelete: Restrict)
+
+  @@index([complaintId])
+  @@index([changedById])
+  @@map("complaint_status_history")
+}
+
+model ComplaintComment {
+  id        String   @id @default(cuid())
+  comment   String
+  createdAt DateTime @default(now())
+
+  complaintId String
+  complaint   Complaint @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([complaintId])
+  @@index([userId])
+  @@map("complaint_comment")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  title     String 
+  message   String 
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  complaintId String?
+  complaint   Complaint? @relation(fields: [complaintId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([complaintId])
+  @@map("notification")
+}

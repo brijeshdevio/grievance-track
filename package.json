@@ -1,0 +1,12 @@
+{
+  "name": "full-stack-workspace",
+  "private": true,
+  "scripts": {
+    "dev:web": "pnpm --dir apps/web dev",
+    "dev:api": "pnpm --dir apps/api start:dev",
+    "dev": "concurrently \"pnpm run dev:api\" \"pnpm run dev:web\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
