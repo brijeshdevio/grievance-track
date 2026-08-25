@@ -8,6 +8,7 @@ import { AuthModule } from '@/modules/auth/auth.module';
 import { JwtAuthGuard, RoleGuard } from '@/common/guards';
 import { EmailsModule } from '@/queues/emails/emails.module';
 import { DepartmentsModule } from '@/modules/departments/departments.module';
+import { CategoriesModule } from '@/modules/categories/categories.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { DepartmentsModule } from '@/modules/departments/departments.module';
     AuthModule,
     EmailsModule,
     DepartmentsModule,
+    CategoriesModule,
   ],
   controllers: [AppController],
   providers: [AppService, JwtAuthGuard, RoleGuard],
